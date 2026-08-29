@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuoteAura — Daily sparks of clarity</title>
+<meta name="description" content="QuoteAura is a modern random quote generator delivering a fresh spark of inspiration with every click.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  /* ============================= */
+  /* Design tokens                  */
+  /* ============================= */
+  :root{
+    --bg: #FFF7ED;
+    --card: #FFFFFF;
+    --primary: #EA580C;
+    --hover: #C2410C;
+    --text: #292524;
+    --secondary: #78716C;
+    --accent: #FED7AA;
+
+    --shadow-1: 0 1px 2px rgba(41,37,36,0.06);
+    --shadow-2: 0 20px 45px -20px rgba(234,88,12,0.28), 0 8px 20px -12px rgba(41,37,36,0.12);
+
+    --font-display: "Fraunces", Georgia, serif;
+    --font-ui: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    --radius-lg: 28px;
+    --radius-md: 16px;
+    --radius-sm: 10px;
+
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ============================= */
+  /* Intro splash                   */
+  /* ============================= */
+  body.intro-locked{ overflow: hidden; }
+
+  .intro-splash{
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background:
+      radial-gradient(60% 55% at 50% 40%, rgba(254,215,170,0.9), transparent 70%),
+      var(--bg);
+    transition: opacity 0.55s var(--ease), visibility 0.55s var(--ease);
+  }
+  .intro-splash.is-hidden{
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .intro-sticker-wrap{
+    position: relative;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .intro-ring{
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, #FFFFFF 0%, var(--accent) 70%, transparent 100%);
+    box-shadow: 0 18px 40px -14px rgba(234,88,12,0.45);
+    animation: ring-breathe 2.2s ease-in-out infinite;
+  }
+  .intro-sticker{
+    position: relative;
+    font-size: 62px;
+    line-height: 1;
+    animation:
+      sticker-pop 0.6s var(--ease) both,
+      sticker-bounce 1.4s ease-in-out 0.6s infinite;
+    filter: drop-shadow(0 6px 14px rgba(41,37,36,0.15));
+  }
+  .intro-caption{
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--secondary);
+    letter-spacing: 0.01em;
+    margin: 0;
+    animation: caption-fade 0.6s var(--ease) 0.25s both;
+  }
+
+  @keyframes sticker-pop{
+    0%{ transform: scale(0.3) rotate(-8deg); opacity: 0; }
+    55%{ transform: scale(1.18) rotate(4deg); opacity: 1; }
+    75%{ transform: scale(0.94) rotate(-2deg); }
+    100%{ transform: scale(1) rotate(0deg); }
+  }
+  @keyframes sticker-bounce{
+    0%, 100%{ transform: translateY(0) rotate(0deg) scale(1); }
+    25%{ transform: translateY(-14px) rotate(-8deg) scale(1.04); }
+    50%{ transform: translateY(2px) rotate(0deg) scale(0.97); }
+    75%{ transform: translateY(-14px) rotate(8deg) scale(1.04); }
+  }
+  @keyframes ring-breathe{
+    0%,100%{ transform: scale(1); opacity: 1; }
+    50%{ transform: scale(1.08); opacity: 0.85; }
+  }
+  @keyframes caption-fade{
+    from{ opacity: 0; transform: translateY(6px); }
+    to{ opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .intro-ring, .intro-sticker, .intro-caption{ animation: none !important; }
+  }
+
+  html{ -webkit-text-size-adjust: 100%; }
+
+  body{
+    margin: 0;
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  a{ color: inherit; }
+
+  /* ============================= */
+  /* Ambient aura background        */
+  /* ============================= */
+  .aura-field{
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  /* soft radial wash behind everything for depth */
+  .aura-glow{
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(60% 50% at 18% 8%, rgba(254,215,170,0.55), transparent 60%),
+      radial-gradient(55% 45% at 88% 18%, rgba(255,210,150,0.4), transparent 60%),
+      radial-gradient(65% 55% at 50% 105%, rgba(234,88,12,0.10), transparent 65%);
+  }
+
+  .aura-blob{
+    position: absolute;
+    filter: blur(60px);
+    opacity: 0.55;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+  .aura-blob--1{
+    width: 500px; height: 460px;
+    background: radial-gradient(circle at 35% 30%, #FFE9D2, var(--accent) 65%, transparent 100%);
+    top: -170px; left: -140px;
+    animation-name: drift1, morph1;
+    animation-duration: 24s, 14s;
+  }
+  .aura-blob--2{
+    width: 420px; height: 400px;
+    background: radial-gradient(circle at 60% 40%, #FFF1DF, #FFDBAE 60%, transparent 100%);
+    bottom: -160px; right: -110px;
+    animation-name: drift2, morph2;
+    animation-duration: 28s, 17s;
+  }
+  .aura-blob--3{
+    width: 300px; height: 300px;
+    background: var(--primary);
+    opacity: 0.09;
+    top: 38%; right: 6%;
+    border-radius: 50%;
+    animation-name: drift3;
+    animation-duration: 32s;
+  }
+  .aura-blob--4{
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, #FFB877, transparent 70%);
+    opacity: 0.28;
+    bottom: 8%; left: 6%;
+    animation-name: drift4, morph1;
+    animation-duration: 20s, 16s;
+  }
+  @keyframes drift1{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(50px, 40px) scale(1.1); }
+  }
+  @keyframes drift2{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(-40px, -30px) scale(1.06); }
+  }
+  @keyframes drift3{
+    0%,100%{ transform: translate(0,0); }
+    50%{ transform: translate(-30px, 45px); }
+  }
+  @keyframes drift4{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(35px, -30px) scale(1.12); }
+  }
+  /* organic "liquid" shape morphing for a livelier, less geometric feel */
+  @keyframes morph1{
+    0%,100%{ border-radius: 42% 58% 65% 35% / 45% 40% 60% 55%; }
+    34%{ border-radius: 60% 40% 30% 70% / 55% 65% 35% 45%; }
+    67%{ border-radius: 35% 65% 55% 45% / 65% 35% 65% 35%; }
+  }
+  @keyframes morph2{
+    0%,100%{ border-radius: 55% 45% 35% 65% / 40% 55% 45% 60%; }
+    34%{ border-radius: 40% 60% 65% 35% / 60% 45% 55% 40%; }
+    67%{ border-radius: 65% 35% 45% 55% / 35% 60% 40% 65%; }
+  }
+
+  /* drifting spark particles -- the signature "aura" texture */
+  .aura-particles{
+    position: absolute;
+    inset: 0;
+  }
+  .spark-particle{
+    position: absolute;
+    bottom: -5%;
+    left: var(--x, 50%);
+    width: var(--size, 5px);
+    height: var(--size, 5px);
+    border-radius: 50%;
+    background: var(--hue, var(--primary));
+    opacity: 0;
+    box-shadow: 0 0 6px 1px var(--glow, rgba(234,88,12,0.35));
+    animation: spark-rise var(--dur, 14s) linear infinite;
+    animation-delay: var(--delay, 0s);
+  }
+  @keyframes spark-rise{
+    0%{ transform: translate(0, 0) scale(0.5); opacity: 0; }
+    8%{ opacity: var(--op, 0.65); }
+    50%{ transform: translate(var(--drift, 24px), -52vh) scale(1); }
+    92%{ opacity: 0; }
+    100%{ transform: translate(calc(var(--drift, 24px) * 2), -104vh) scale(0.4); opacity: 0; }
+  }
+
+  /* faint grain for texture and richness */
+  .grain-overlay{
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    background-size: 180px 180px;
+  }
+
+  /* ============================= */
+  /* Header                         */
+  /* ============================= */
+  .site-header{
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 28px clamp(20px, 5vw, 56px) 8px;
+  }
+  .brand{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .brand-mark{
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+  .brand-word{
+    font-family: var(--font-ui);
+    font-weight: 800;
+    font-size: 1.28rem;
+    letter-spacing: -0.01em;
+  }
+  .brand-word .aura-syllable{ color: var(--primary); }
+  .header-tagline{
+    font-size: 0.86rem;
+    color: var(--secondary);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  @media (max-width: 560px){
+    .header-tagline{ display: none; }
+  }
+
+  /* ============================= */
+  /* Main / Card                    */
+  /* ============================= */
+  main{
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(24px, 6vw, 56px) clamp(18px, 5vw, 40px) clamp(40px, 6vw, 64px);
+  }
+
+  .quote-card{
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2);
+    padding: clamp(28px, 5vw, 52px) clamp(24px, 6vw, 56px) clamp(26px, 4vw, 40px);
+    overflow: hidden;
+  }
+  .quote-card::before{
+    /* subtle top hairline of accent to ground the card */
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--primary) 55%, var(--accent));
+  }
+
+  .card-top-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .quote-tag{
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary);
+    background: rgba(254, 215, 170, 0.45);
+    padding: 6px 12px;
+    border-radius: 999px;
+    transition: opacity .25s var(--ease);
+  }
+  .quote-number{
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--secondary);
+    font-variant-numeric: tabular-nums;
+    transition: opacity .25s var(--ease);
+  }
+
+  .watermark{
+    position: absolute;
+    top: 6px;
+    right: 18px;
+    width: 128px;
+    height: 128px;
+    opacity: 0.05;
+    pointer-events: none;
+  }
+
+  .quote-content{
+    position: relative;
+    margin-top: 22px;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.38s var(--ease), transform 0.38s var(--ease);
+  }
+  .quote-content.is-leaving{
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  .quote-content.is-entering{
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  blockquote{
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.35rem, 1.05rem + 1.5vw, 2.05rem);
+    line-height: 1.38;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  blockquote::before{ content: open-quote; }
+  blockquote::after{ content: close-quote; }
+
+  figcaption{
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--secondary);
+  }
+  figcaption .rule{
+    width: 26px;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .divider{
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(41,37,36,0.09), transparent);
+    margin: 28px 0 22px;
+  }
+
+  /* ============================= */
+  /* Actions                        */
+  /* ============================= */
+  .actions{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary{
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #FFFFFF;
+    background: var(--primary);
+    border: none;
+    padding: 13px 24px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    box-shadow: 0 10px 24px -10px rgba(234,88,12,0.55);
+    transition: background 0.2s var(--ease), transform 0.15s var(--ease), box-shadow .2s var(--ease);
+    isolation: isolate;
+    overflow: visible;
+  }
+  .btn-primary:hover{
+    background: var(--hover);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px -10px rgba(194,65,12,0.55);
+  }
+  .btn-primary:active{ transform: translateY(0px) scale(0.98); }
+  .btn-primary svg{ width: 18px; height: 18px; flex-shrink: 0; }
+
+  .btn-primary .pulse-ring{
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--primary);
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .btn-primary.is-pulsing .pulse-ring{
+    animation: ring-pulse 0.6s var(--ease);
+  }
+  @keyframes ring-pulse{
+    0%{ opacity: 0.55; transform: scale(1); }
+    100%{ opacity: 0; transform: scale(1.35); }
+  }
+
+  .btn-icon{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid rgba(41,37,36,0.10);
+    background: transparent;
+    color: var(--secondary);
+    cursor: pointer;
+    transition: border-color .2s var(--ease), color .2s var(--ease), background .2s var(--ease);
+    position: relative;
+  }
+  .btn-icon:hover{
+    color: var(--primary);
+    border-color: var(--accent);
+    background: rgba(254,215,170,0.28);
+  }
+  .btn-icon svg{ width: 19px; height: 19px; }
+
+  .toast{
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translate(-50%, 100%);
+    background: var(--text);
+    color: #FFF7ED;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s var(--ease), transform .2s var(--ease);
+  }
+  .toast.is-visible{
+    opacity: 1;
+    transform: translate(-50%, 130%);
+  }
+
+  /* focus visibility */
+  button:focus-visible{
+    outline: 2.5px solid var(--primary);
+    outline-offset: 3px;
+  }
+
+  /* ============================= */
+  /* Footer                         */
+  /* ============================= */
+  .site-footer{
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 18px clamp(20px, 5vw, 56px) 30px;
+    color: var(--secondary);
+    font-size: 0.82rem;
+    text-align: center;
+  }
+  .site-footer .brand-mark{ width: 18px; height: 18px; opacity: 0.7; flex-shrink: 0; }
+  .site-footer strong{ color: var(--text); font-weight: 700; }
+  .footer-text{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .footer-credit{
+    font-size: 0.74rem;
+    color: var(--secondary);
+    opacity: 0.85;
+  }
+
+  /* ============================= */
+  /* Small screens                  */
+  /* ============================= */
+  @media (max-width: 420px){
+    .actions{ width: 100%; }
+    .btn-primary{ flex: 1; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .aura-blob, .spark-particle{ animation: none !important; opacity: 0.4; }
+    .quote-content, .btn-primary, .toast{ transition-duration: 0.01ms !important; }
+    .pulse-ring{ animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Intro splash -->
+  <div class="intro-splash" id="introSplash" aria-hidden="true">
+    <div class="intro-sticker-wrap">
+      <span class="intro-ring"></span>
+      <span class="intro-sticker">🙂</span>
+    </div>
+    <p class="intro-caption">Warming up your daily spark…</p>
+  </div>
+
+
+  <!-- Ambient background -->
+  <div class="aura-field" aria-hidden="true">
+    <div class="aura-glow"></div>
+    <div class="aura-blob aura-blob--1"></div>
+    <div class="aura-blob aura-blob--2"></div>
+    <div class="aura-blob aura-blob--3"></div>
+    <div class="aura-blob aura-blob--4"></div>
+    <div class="aura-particles" id="auraParticles"></div>
+  </div>
+  <div class="grain-overlay" aria-hidden="true"></div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="QuoteAura home">
+      <svg class="brand-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M14 14c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9-.4 3-2.3 5.1-4.6 6.4a1 1 0 00.4 1.9c6.6-.6 11.1-5.7 11.1-13.3v-3c0-4.4-1.6-7.9-6-7.9z" fill="var(--primary)"/>
+        <path d="M32 14c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9-.4 3-2.3 5.1-4.6 6.4a1 1 0 00.4 1.9c6.6-.6 11.1-5.7 11.1-13.3v-3c0-4.4-1.6-7.9-6-7.9z" fill="var(--primary)"/>
+        <g fill="var(--accent)">
+          <circle cx="38.5" cy="9.5" r="2.4"/>
+          <path d="M38.5 2v3.4M38.5 13.2v3.4M31 9.5h3.4M42.6 9.5H46" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/>
+        </g>
+      </svg>
+      <span class="brand-word">Quote<span class="aura-syllable">Aura</span></span>
+    </a>
+    <span class="header-tagline">Daily sparks of clarity</span>
+  </header>
+
+  <!-- Main -->
+  <main>
+    <section class="quote-card" aria-label="Random quote generator">
+
+      <svg class="watermark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M14 14c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9-.4 3-2.3 5.1-4.6 6.4a1 1 0 00.4 1.9c6.6-.6 11.1-5.7 11.1-13.3v-3c0-4.4-1.6-7.9-6-7.9z" fill="var(--text)"/>
+        <path d="M32 14c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9-.4 3-2.3 5.1-4.6 6.4a1 1 0 00.4 1.9c6.6-.6 11.1-5.7 11.1-13.3v-3c0-4.4-1.6-7.9-6-7.9z" fill="var(--text)"/>
+      </svg>
+
+      <div class="card-top-row">
+        <span class="quote-tag" id="quoteTag">On Courage</span>
+        <span class="quote-number" id="quoteNumber">No. 01 / 34</span>
+      </div>
+
+      <figure class="quote-content" id="quoteContent" aria-live="polite">
+        <blockquote id="quoteText">Loading a spark of inspiration…</blockquote>
+        <figcaption>
+          <span class="rule" aria-hidden="true"></span>
+          <span id="quoteAuthor">QuoteAura</span>
+        </figcaption>
+      </figure>
+
+      <div class="divider" aria-hidden="true"></div>
+
+      <div class="actions" role="group" aria-label="Quote actions">
+        <button class="btn-primary" id="newQuoteBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 2l1.8 5.6L19.4 9l-5.6 1.8L12 16l-1.8-5.2L4.6 9l5.6-1.4L12 2z" fill="currentColor"/>
+          </svg>
+          New Quote
+          <span class="pulse-ring" aria-hidden="true"></span>
+        </button>
+
+        <button class="btn-icon" id="copyBtn" type="button" aria-label="Copy quote to clipboard">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="8" y="8" width="12" height="12" rx="2.2" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M16 8V6.2A2.2 2.2 0 0013.8 4H6.2A2.2 2.2 0 004 6.2v7.6A2.2 2.2 0 006.2 16H8" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+          <span class="toast" id="copyToast">Copied!</span>
+        </button>
+
+        <button class="btn-icon" id="shareBtn" type="button" aria-label="Share this quote on X (Twitter)">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M18.5 4h2.7l-5.9 6.7L22 20h-5.4l-4.2-5.5L7.5 20H4.8l6.3-7.2L4 4h5.6l3.8 5.1L18.5 4z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <svg class="brand-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M14 14c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9-.4 3-2.3 5.1-4.6 6.4a1 1 0 00.4 1.9c6.6-.6 11.1-5.7 11.1-13.3v-3c0-4.4-1.6-7.9-6-7.9z" fill="var(--secondary)"/>
+      <path d="M32 14c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9-.4 3-2.3 5.1-4.6 6.4a1 1 0 00.4 1.9c6.6-.6 11.1-5.7 11.1-13.3v-3c0-4.4-1.6-7.9-6-7.9z" fill="var(--secondary)"/>
+    </svg>
+    <div class="footer-text">
+      <span>Made with 🧡 for CodeAlpha</span>
+      <span class="footer-credit">By G. Meghana Reddy — Gouthami Institute of Technology and Management for Women, CSE</span>
+    </div>
+  </footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* Intro splash: show the sticker for 3s, then reveal the site */
+  document.body.classList.add("intro-locked");
+  const splash = document.getElementById("introSplash");
+  window.setTimeout(function(){
+    if (splash){
+      splash.classList.add("is-hidden");
+      window.setTimeout(function(){
+        splash.parentNode && splash.parentNode.removeChild(splash);
+        document.body.classList.remove("intro-locked");
+      }, 600);
+    } else {
+      document.body.classList.remove("intro-locked");
+    }
+  }, 3000);
+
+  /* ============================================================
+     30+ original inspirational quotes, each tagged with a theme.
+     ============================================================ */
+  const quotes = [
+    { text: "The wound is the place where the light enters you.", author: "Rumi", tag: "On Healing" },
+    { text: "It is never too late to be what you might have been.", author: "George Eliot", tag: "On Growth" },
+    { text: "Well done is better than well said.", author: "Benjamin Franklin", tag: "On Action" },
+    { text: "The only way to do great work is to love what you do.", author: "Steve Jobs", tag: "On Purpose" },
+    { text: "You miss every shot you never take.", author: "Wayne Gretzky", tag: "On Courage" },
+    { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford", tag: "On Belief" },
+    { text: "The best way out is always through.", author: "Robert Frost", tag: "On Resilience" },
+    { text: "Life is what happens while you are busy making other plans.", author: "John Lennon", tag: "On Presence" },
+    { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein", tag: "On Perspective" },
+    { text: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu", tag: "On Beginnings" },
+    { text: "What lies behind us and before us are small matters compared to what lies within us.", author: "Ralph Waldo Emerson", tag: "On Inner Strength" },
+    { text: "Turn your wounds into wisdom.", author: "Oprah Winfrey", tag: "On Growth" },
+    { text: "The only limit to our realization of tomorrow is our doubts of today.", author: "Franklin D. Roosevelt", tag: "On Belief" },
+    { text: "Do not go where the path may lead; go instead where there is no path and leave a trail.", author: "Ralph Waldo Emerson", tag: "On Courage" },
+    { text: "It always seems impossible until it's done.", author: "Nelson Mandela", tag: "On Perseverance" },
+    { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt", tag: "On Dreams" },
+    { text: "I have not failed. I've just found ten thousand ways that won't work.", author: "Thomas Edison", tag: "On Perseverance" },
+    { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci", tag: "On Simplicity" },
+    { text: "You are never too old to set another goal or to dream a new dream.", author: "C. S. Lewis", tag: "On Renewal" },
+    { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill", tag: "On Courage" },
+    { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt", tag: "On Belief" },
+    { text: "A person who never made a mistake never tried anything new.", author: "Albert Einstein", tag: "On Curiosity" },
+    { text: "The mind that opens to a new idea never returns to its original size.", author: "Albert Einstein", tag: "On Curiosity" },
+    { text: "Happiness is not something ready-made. It comes from your own actions.", author: "Dalai Lama", tag: "On Joy" },
+    { text: "Everything you've ever wanted is on the other side of fear.", author: "George Addair", tag: "On Courage" },
+    { text: "Where there is love there is life.", author: "Mahatma Gandhi", tag: "On Kindness" },
+    { text: "Be the change that you wish to see in the world.", author: "Mahatma Gandhi", tag: "On Change" },
+    { text: "Knowing yourself is the beginning of all wisdom.", author: "Aristotle", tag: "On Wisdom" },
+    { text: "Quality is not an act, it is a habit.", author: "Aristotle", tag: "On Discipline" },
+    { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney", tag: "On Action" },
+    { text: "All our dreams can come true if we have the courage to pursue them.", author: "Walt Disney", tag: "On Dreams" },
+    { text: "Twenty years from now you will be more disappointed by the things you didn't do.", author: "Mark Twain", tag: "On Regret" },
+    { text: "The secret of getting ahead is getting started.", author: "Mark Twain", tag: "On Action" },
+    { text: "Optimism is the faith that leads to achievement.", author: "Helen Keller", tag: "On Hope" },
+    { text: "Although the world is full of suffering, it is also full of the overcoming of it.", author: "Helen Keller", tag: "On Resilience" },
+    { text: "Time is the wisest counselor of all.", author: "Pericles", tag: "On Patience" },
+    { text: "He who has a why to live can bear almost any how.", author: "Friedrich Nietzsche", tag: "On Purpose" }
+  ];
+
+  const TOTAL = quotes.length;
+
+  /* Elements */
+  const quoteContent = document.getElementById("quoteContent");
+  const quoteTextEl  = document.getElementById("quoteText");
+  const quoteAuthorEl = document.getElementById("quoteAuthor");
+  const quoteTagEl   = document.getElementById("quoteTag");
+  const quoteNumberEl = document.getElementById("quoteNumber");
+  const newQuoteBtn  = document.getElementById("newQuoteBtn");
+  const copyBtn      = document.getElementById("copyBtn");
+  const copyToast    = document.getElementById("copyToast");
+  const shareBtn     = document.getElementById("shareBtn");
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ============================================================
+     Ambient spark particles: a field of small glowing motes that
+     drift upward and fade, reinforcing the "aura" of the brand.
+     ============================================================ */
+  (function seedParticles(){
+    if (prefersReducedMotion) return;
+    const field = document.getElementById("auraParticles");
+    if (!field) return;
+
+    const hues = ["var(--primary)", "var(--accent)", "#FFB877"];
+    const count = window.innerWidth < 640 ? 10 : 18;
+
+    for (let i = 0; i < count; i++){
+      const p = document.createElement("span");
+      p.className = "spark-particle";
+      const size = (Math.random() * 4 + 3).toFixed(1) + "px";
+      const dur = (Math.random() * 9 + 10).toFixed(1) + "s";
+      const delay = (-Math.random() * 20).toFixed(1) + "s";
+      const drift = (Math.random() * 60 - 30).toFixed(0) + "px";
+      const op = (Math.random() * 0.35 + 0.35).toFixed(2);
+      const hue = hues[Math.floor(Math.random() * hues.length)];
+
+      p.style.setProperty("--size", size);
+      p.style.setProperty("--dur", dur);
+      p.style.setProperty("--delay", delay);
+      p.style.setProperty("--drift", drift);
+      p.style.setProperty("--op", op);
+      p.style.setProperty("--hue", hue);
+      p.style.setProperty("--x", (Math.random() * 100).toFixed(1) + "%");
+
+      field.appendChild(p);
+    }
+  })();
+
+  /* ============================================================
+     "Shuffle bag" selection: every quote is shown once before any
+     quote repeats, and the same quote can never appear twice in a
+     row -- even across a bag refill boundary.
+     ============================================================ */
+  let bag = [];
+  let lastIndex = null;
+
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function refillBag(){
+    bag = shuffle(quotes.map((_, i) => i));
+    if (bag.length > 1 && bag[bag.length - 1] === lastIndex){
+      // swap to avoid a same-quote repeat right at the boundary
+      [bag[bag.length - 1], bag[0]] = [bag[0], bag[bag.length - 1]];
+    }
+  }
+
+  function nextIndex(){
+    if (bag.length === 0) refillBag();
+    return bag.pop();
+  }
+
+  function renderQuote(index, animate){
+    const q = quotes[index];
+
+    const apply = () => {
+      quoteTextEl.textContent = q.text;
+      quoteAuthorEl.textContent = q.author;
+      quoteTagEl.textContent = q.tag;
+      quoteNumberEl.textContent = "No. " + String(index + 1).padStart(2, "0") + " / " + TOTAL;
+    };
+
+    if (!animate || prefersReducedMotion){
+      apply();
+      return;
+    }
+
+    quoteContent.classList.add("is-leaving");
+    window.setTimeout(() => {
+      apply();
+      quoteContent.classList.remove("is-leaving");
+      quoteContent.classList.add("is-entering");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          quoteContent.classList.remove("is-entering");
+        });
+      });
+    }, 320);
+  }
+
+  function showNewQuote(){
+    const idx = nextIndex();
+    lastIndex = idx;
+    renderQuote(idx, true);
+
+    // signature "spark pulse" micro-interaction
+    newQuoteBtn.classList.remove("is-pulsing");
+    void newQuoteBtn.offsetWidth; // restart animation
+    newQuoteBtn.classList.add("is-pulsing");
+  }
+
+  /* Initial quote on load */
+  (function init(){
+    const idx = nextIndex();
+    lastIndex = idx;
+    renderQuote(idx, false);
+  })();
+
+  newQuoteBtn.addEventListener("click", showNewQuote);
+
+  /* Copy to clipboard */
+  copyBtn.addEventListener("click", async function(){
+    const text = quoteTextEl.textContent + " — " + quoteAuthorEl.textContent;
+    try{
+      await navigator.clipboard.writeText(text);
+    }catch(err){
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    copyToast.classList.add("is-visible");
+    window.clearTimeout(copyBtn._toastTimer);
+    copyBtn._toastTimer = window.setTimeout(() => {
+      copyToast.classList.remove("is-visible");
+    }, 1600);
+  });
+
+  /* Share on X / Twitter */
+  shareBtn.addEventListener("click", function(){
+    const text = "\u201C" + quoteTextEl.textContent + "\u201D \u2014 " + quoteAuthorEl.textContent;
+    const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text);
+    window.open(url, "_blank", "noopener,noreferrer");
+  });
+
+})();
+</script>
+</body>
+</html>
